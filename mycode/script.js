@@ -3,14 +3,6 @@
 // prettier-ignore
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const form = document.querySelector('.form');
-const containerWorkouts = document.querySelector('.workouts');
-const inputType = document.querySelector('.form__input--type');
-const inputDistance = document.querySelector('.form__input--distance');
-const inputDuration = document.querySelector('.form__input--duration');
-const inputCadence = document.querySelector('.form__input--cadence');
-const inputElevation = document.querySelector('.form__input--elevation');
-
 class Workout {
   date = new Date();
   //unique identifier (usually use a library)
@@ -61,6 +53,15 @@ class Cycling extends Workout {
 
 ///////////////////////////////////////////////////////
 //APPLICATION ARCHITECTURE
+
+const form = document.querySelector('.form');
+const containerWorkouts = document.querySelector('.workouts');
+const inputType = document.querySelector('.form__input--type');
+const inputDistance = document.querySelector('.form__input--distance');
+const inputDuration = document.querySelector('.form__input--duration');
+const inputCadence = document.querySelector('.form__input--cadence');
+const inputElevation = document.querySelector('.form__input--elevation');
+
 class App {
   //Private instance properties
   #map;
@@ -148,19 +149,44 @@ class App {
   }
 
   _newWorkout(e) {
+    //helper function (inputs=array)
+    const validInputs = (...inputs) =>
+      inputs.every(inp => Number.isFinite(inp));
+
     e.preventDefault(); //stop page reload after submitting form
     //console.log(this);
     //event handler function will have this keyword on the DOM element..
     //...to which it is attached = form (fix with bind on _newWorkout in constructor)
 
-    //Clear input fields (make sure use .value to clear values not the constants)
-    inputDistance.value =
-      inputDuration.value =
-      inputCadence.value =
-      inputElevation.value =
-        '';
+    //GET DATA FROM FORM
+    const type = inputType.value;
+    const distance = +inputDistance.value; //+converts the string to a number
+    const duration = +inputDuration.value;
 
-    //Display Marker
+    //IF WORKOUT = RUNNING : CREATE RUNNING OBJECT
+    if (type === 'running') {
+      const cadence = +inputCadence.value;
+      //CHECK IF DATA IS VALID
+      if (
+        //!Number.isFinite(distance) ||
+        //!Number.isFinite(duration) ||
+        //!Number.isFinite(cadence)
+        !validInputs(distance, duration, cadence)
+      )
+        return alert('Inputs have to be positive numbers!');
+    }
+
+    //IF WORKOUT = CYCLING : CREATE CYCLING OBJECT
+    if (type === 'cycling') {
+      const elevation = +inputElevation.value;
+      //CHECK IF DATA IS VALID
+      if (!validInputs(distance, duration, elevation))
+        return alert('Inputs have to be positive numbers!');
+    }
+
+    //ADD NEW OBJECT TO WORKOUT ARRAY
+
+    //RENDER WORKOUT ON MAP AS MARKER
     //console.log(this.#mapEvent); use latlng object with lat & lng for variables
     //****need access to map and mapEvent**** (make global variables)
     const { lat, lng } = this.#mapEvent.latlng;
@@ -181,6 +207,16 @@ class App {
       )
       .setPopupContent('Workout!')
       .openPopup();
+
+    //RENDER WORKOUT ON LIST
+
+    //HIDE FORM + CLEAR INPUT FIELDS
+    //make sure use .value to clear values not the constants
+    inputDistance.value =
+      inputDuration.value =
+      inputCadence.value =
+      inputElevation.value =
+        '';
   }
 }
 
