@@ -5,6 +5,7 @@ class Workout {
   //unique identifier (usually use a library)
   //use date, converted to a string, take last 10digits
   id = (Date.now() + '').slice(-10);
+  clicks = 0;
 
   constructor(coords, distance, duration) {
     this.coords = coords; // [lat, lng]
@@ -20,6 +21,10 @@ class Workout {
     this.description = `${this.type[0].toUpperCase()}${this.type.slice(1)} on ${
       months[this.date.getMonth()]
     } ${this.date.getDate()}`;
+  }
+
+  click() {
+    this.clicks++;
   }
 }
 
@@ -76,11 +81,18 @@ const inputElevation = document.querySelector('.form__input--elevation');
 class App {
   //Private instance properties
   #map;
+  #mapZoomLevel = 13;
   #mapEvent;
   #workouts = [];
   //constructor method executed imediately when new App read
   constructor() {
+    //Get user's position
     this._getPosition();
+
+    //Get data from local storage
+    this._getLocalStorage();
+
+    //Attach event handlers:
 
     //RENDERING WORKOUT INPUT FORM
     form.addEventListener('submit', this._newWorkout.bind(this));
@@ -89,6 +101,9 @@ class App {
     //hide and display correct fields for running vs. cycling
     inputType.addEventListener('change', this._toggleElevationField);
     //don't need to bing this keyword as it is not used in the function
+
+    //event listener for click on list workout = take to workout on map
+    containerWorkouts.addEventListener('click', this._moveToPopup.bind(this));
   }
 
   _getPosition() {
@@ -125,7 +140,7 @@ class App {
 
     //console.log(this);//undefined untill use bind(this) on _loadMap in geolocation
     //reasign global map variable
-    this.#map = L.map('map').setView(coords, 13); //number is zoom level
+    this.#map = L.map('map').setView(coords, this.#mapZoomLevel); //number is zoom level
     //console.log(map); see methods & properties inherited
 
     //can change style of map with tileLayer https
@@ -146,6 +161,11 @@ class App {
     //map = special object from leaflet with a couple methods and properties on it
     //HANDLING CLICKS ON MAP:
     this.#map.on('click', this._showForm.bind(this));
+
+    //render markers from local storage
+    this.#workouts.forEach(work => {
+      this._renderWorkoutMarker(work);
+    });
   }
 
   _showForm(mapE) {
@@ -221,6 +241,7 @@ class App {
 
       workout = new Cycling([lat, lng], distance, duration, elevation);
     }
+    //Export functionality:
 
     //ADD NEW OBJECT TO WORKOUT ARRAY
     this.#workouts.push(workout);
@@ -234,6 +255,9 @@ class App {
 
     //HIDE FORM + CLEAR INPUT FIELDS
     this._hideForm();
+
+    //SET LOCAL STORAGE TO ALL WORKOUTS
+    this._setLocalStorage();
   }
 
   _renderWorkoutMarker(workout) {
@@ -305,6 +329,65 @@ class App {
 
     //add as a sibling after the form in index.html
     form.insertAdjacentHTML('afterend', html);
+  }
+
+  _moveToPopup(e) {
+    //e.target = element that is clicked
+    const workoutEl = e.target.closest('.workout');
+    //console.log(workoutEl); //get entire element
+    //(use data-id to find the workout in the workout array)
+
+    if (!workoutEl) return; //if not clicking on the workoutEl ignore
+
+    const workout = this.#workouts.find(
+      work => work.id === workoutEl.dataset.id
+    );
+    //console.log(workout);
+
+    //method in leaflet available on all map objects
+    //takes arguments: coordinates, zoom level, an object {} of options
+    this.#map.setView(workout.coords, this.#mapZoomLevel, {
+      animate: true,
+      pan: {
+        duration: 1,
+      },
+    });
+
+    //using the public interface
+    //workout.click();
+    //objects coming from local storage will not inherit methods (loose prototype chain)
+  }
+
+  _setLocalStorage() {
+    //API provided by browser (only advised to use with small amounts of data => blocking)
+    //arguments: name, string to store (associated with name)
+    //simple key, value store
+    //JSON.stringify = convert anything in JS to a string
+    localStorage.setItem('workouts', JSON.stringify(this.#workouts));
+  }
+
+  _getLocalStorage() {
+    const data = JSON.parse(localStorage.getItem('workouts'));
+    //console.log(data); //large string
+    //(turn back into objects = JSON.parse())
+
+    //if no data ignore
+    if (!data) return;
+
+    //set workouts to data that is stored
+    this.#workouts = data;
+
+    //render workouts in the list (& on map in _loadMap)
+    this.#workouts.forEach(work => {
+      this._renderWorkout(work);
+    });
+  }
+
+  //reset local storage
+  //call in console: app.reset()
+  reset() {
+    localStorage.removeItem('workouts');
+    location.reload();
   }
 }
 
