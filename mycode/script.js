@@ -392,3 +392,15 @@ class App {
 }
 
 const app = new App();
+
+//Future features:
+//Ability to edit a workout
+//Ability to delete a workout
+//Ability to delete all workouts
+//Ability to sort workouts by a certain field (e.g. distance)
+//Re-build Running and Cycling objects coming from Local Storage
+//More realistic error and confirmation messages
+//Ability to position the map to show all workouts **-dependant on leaflet library
+//Ability to draw lines and shapes instead of just points for workout markers **
+//Geocode location from coordinates('Run in City, USA')[only after asynchronousJS section]
+//Display weather data for workout time and place [only after asynchronous JS section]
